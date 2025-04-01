@@ -58,8 +58,37 @@ st.plotly_chart(fig_retention)
 # -----------------------------------------
 st.title("DAU")
 
-install_val = st.slider("New Players per Day", 1, 10000, 100)
-daily_installs = [install_val] *days_to_calc
+st.sidebar.title("📈 Monthly Campaign Installs")
+
+monthly_campaigns = []
+months_labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+for i in range(12):
+    val = st.sidebar.number_input(
+        f"{months_labels[i]} Campaign Installs", 
+        min_value=0, value=3000, step=500
+    )
+    monthly_campaigns.append(val)
+
+daily_installs = []
+for month_index in range(12):
+    installs_per_day = monthly_campaigns[month_index] // days_in_month
+    for _ in range(days_in_month):
+        daily_installs.append(installs_per_day)
+
+# In case 12 * 30 < 365, pad the remaining days
+while len(daily_installs) < days_to_calc:
+    daily_installs.append(0)
+
+st.write("### 📊 Daily Installs from Monthly Campaigns")
+st.line_chart(pd.DataFrame({
+    "Day": range(days_to_calc),
+    "Installs": daily_installs
+}))
+
+# install_val = st.slider("New Players per Day", 1, 10000, 100)
+# daily_installs = [install_val] *days_to_calc
 
 def install_func(install_day):
     return daily_installs[install_day]
@@ -99,6 +128,9 @@ def calculate(days_to_calc, months_to_calc, retention_over_days, install_functio
         'installs_on_day': pd.DataFrame({'day': np.arange(days_to_calc), 'installs': installs_on_day})
     }
 
+
+
+
 # --- Project DAU ---
 resultDAU = calculate(days_to_calc, months_to_calc, retention_on_days, install_func)
 
@@ -115,7 +147,12 @@ st.sidebar.title("Pricing & Revenue")
 # --- User Inputs ---
 arpdau = st.sidebar.number_input("ARPDAU ($)", min_value=0.1, value=0.50, step=0.01)
 paid_price = st.sidebar.number_input("Paid Price ($)", min_value=0.1, value=29.99, step=0.10)
+battle_pass_price = st.sidebar.number_input("BP Price ($)", min_value=0.1, value=9.99, step=0.10)
 cpi = st.sidebar.number_input("CPI ($)", min_value=0.1, value=1.99, step=0.01)
+
+
+# Truncate extra if too many (e.g., leap year)
+daily_installs = daily_installs[:days_to_calc]
 
 # --- Compute Daily Revenue ---
 df_revenue = pd.DataFrame({
@@ -222,4 +259,48 @@ st.plotly_chart(fig_roas)
 # --- Download ROAS Data ---
 csv = df_roas.to_csv(index=False).encode("utf-8")
 st.download_button("Download ROAS Data", csv, "roas_data.csv", "text/csv")
+
+st.sidebar.title("🎯 Seasonal Campaign Cost")
+
+season_costs = []
+for i in range(12):
+    cost = st.sidebar.number_input(
+        f"{months_labels[i]} Season Cost ($)",
+        min_value=0.0,
+        value=10000.0,
+        step=500.0
+    )
+    season_costs.append(cost)
+
+battle_pass_conversion = st.sidebar.slider("Battle Pass Conversion Rate (%)", 0, 100, 10)
+battle_pass_conversion_rate = battle_pass_conversion / 100
+
+monthly_bp_revenue = []
+for month_index in range(12):
+    total_installs = monthly_campaigns[month_index]
+    bp_buyers = total_installs * battle_pass_conversion_rate
+    revenue = bp_buyers * battle_pass_price
+    monthly_bp_revenue.append(revenue)
+
+monthly_roi = []
+for i in range(12):
+    cost = season_costs[i]
+    revenue = monthly_bp_revenue[i]
+    roi = (revenue - cost) / cost if cost > 0 else 0
+    monthly_roi.append(roi)
+df_roi = pd.DataFrame({
+    "Month": months_labels,
+    "Season Cost ($)": season_costs,
+    "Battle Pass Revenue ($)": [round(r, 2) for r in monthly_bp_revenue],
+    "ROI": [round(r, 2) for r in monthly_roi],
+    "ROI %": [f"{round(r * 100, 2)}%" for r in monthly_roi]
+})
+
+st.write("### 📈 Season Cost vs ROI Table")
+st.dataframe(df_roi)
+
+fig_roi = px.bar(df_roi, x="Month", y="ROI", title="📊 ROI by Season",
+                 labels={"ROI": "Return on Investment"},
+                 text="ROI %", height=400)
+st.plotly_chart(fig_roi)
 
