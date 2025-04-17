@@ -22,7 +22,7 @@ months_to_calc = int(days_in_year/30)
 ret_days= [0, 1, 3, 7, 14, 30, 60, 90, 180, 365]
 # --- Retention Data ---
 retention_models = {
-    "Default": { # basic PC data 
+    "Default": { # basic PC data chagpt research dtaa 
          "retention_rates": [1.0, 0.45, 0.35, 0.25, 0.175, 0.15, 0.075, 0.04, 0.02, 0.015],
     },
     "Rust": {
@@ -64,17 +64,18 @@ monthly_campaigns = []
 months_labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
                  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-months_default_installs = [ 250_000,  # Month 1
-    120_000,  # Month 2
-    90_000,   # Month 3
-    70_000,   # Month 4
-    60_000,   # Month 5
-    50_000,   # Month 6
-    45_000,   # Month 7
-    40_000,   # Month 8
-    40_000,   # Month 9
-    30_000,   # Month 10
-    20_000,   # Month 11
+months_default_installs = [ 
+    200_000,  # Month 1
+    50_000,  # Month 2
+    30_000,   # Month 3
+    40_000,   # Month 4
+    20_000,   # Month 5
+    60_000,   # Month 6
+    25_000,   # Month 7
+    15_000,   # Month 8
+    20_000,   # Month 9
+    15_000,   # Month 10
+    30_000,   # Month 11
     10_000    # Month 12
     ]
 
