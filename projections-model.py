@@ -67,7 +67,7 @@ months_labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
 for i in range(12):
     val = st.sidebar.number_input(
         f"{months_labels[i]} Campaign Installs", 
-        min_value=0, value=3000, step=500
+        min_value=0, value=50000, step=500
     )
     monthly_campaigns.append(val)
 
@@ -260,47 +260,60 @@ st.plotly_chart(fig_roas)
 csv = df_roas.to_csv(index=False).encode("utf-8")
 st.download_button("Download ROAS Data", csv, "roas_data.csv", "text/csv")
 
-st.sidebar.title("🎯 Seasonal Campaign Cost")
+st.sidebar.title("🎯 Seasonal Campaign Cost (2-Month Seasons)")
 
+# --- Define 2-month seasons
+season_labels = ["S1 (Jan-Feb)", "S2 (Mar-Apr)", "S3 (May-Jun)",
+                 "S4 (Jul-Aug)", "S5 (Sep-Oct)", "S6 (Nov-Dec)"]
+
+# --- Aggregate monthly installs into 2-month seasons
+seasonal_installs = [
+    monthly_campaigns[i] + monthly_campaigns[i + 1]
+    for i in range(0, 12, 2)
+]
 season_costs = []
-for i in range(12):
+# --- Automatically calculate season costs based on CPI
+for i in range(6):
     cost = st.sidebar.number_input(
         f"{months_labels[i]} Season Cost ($)",
         min_value=0.0,
-        value=10000.0,
+        value=93528.0,
         step=500.0
     )
     season_costs.append(cost)
 
+# --- Battle Pass Conversion
 battle_pass_conversion = st.sidebar.slider("Battle Pass Conversion Rate (%)", 0, 100, 10)
 battle_pass_conversion_rate = battle_pass_conversion / 100
 
+# --- Calculate BP revenue and ROI for each 2-month season
 monthly_bp_revenue = []
-for month_index in range(12):
-    total_installs = monthly_campaigns[month_index]
+monthly_roi = []
+
+for i in range(6):
+    total_installs = seasonal_installs[i]
+    cost = season_costs[i]
     bp_buyers = total_installs * battle_pass_conversion_rate
     revenue = bp_buyers * battle_pass_price
-    monthly_bp_revenue.append(revenue)
-
-monthly_roi = []
-for i in range(12):
-    cost = season_costs[i]
-    revenue = monthly_bp_revenue[i]
     roi = (revenue - cost) / cost if cost > 0 else 0
-    monthly_roi.append(roi)
+
+    monthly_bp_revenue.append(round(revenue, 2))
+    monthly_roi.append(round(roi, 2))
+
+# --- Create DataFrame for display
 df_roi = pd.DataFrame({
-    "Month": months_labels,
+    "Season": season_labels,
     "Season Cost ($)": season_costs,
-    "Battle Pass Revenue ($)": [round(r, 2) for r in monthly_bp_revenue],
-    "ROI": [round(r, 2) for r in monthly_roi],
-    "ROI %": [f"{round(r * 100, 2)}%" for r in monthly_roi]
+    "Battle Pass Revenue ($)": monthly_bp_revenue,
+    "ROI": monthly_roi,
+    "ROI %": [f"{r * 100:.2f}%" for r in monthly_roi]
 })
 
-st.write("### 📈 Season Cost vs ROI Table")
+# --- Show table and chart
+st.write("### 📈 Season Cost vs ROI Table (2-Month Seasons)")
 st.dataframe(df_roi)
 
-fig_roi = px.bar(df_roi, x="Month", y="ROI", title="📊 ROI by Season",
+fig_roi = px.bar(df_roi, x="Season", y="ROI", title="📊 ROI by 2-Month Season",
                  labels={"ROI": "Return on Investment"},
                  text="ROI %", height=400)
 st.plotly_chart(fig_roi)
-
