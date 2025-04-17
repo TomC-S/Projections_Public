@@ -23,7 +23,7 @@ ret_days= [0, 1, 3, 7, 14, 30, 60, 90, 180, 365]
 # --- Retention Data ---
 retention_models = {
     "Default": { # basic PC data 
-         "retention_rates": [1.0, 0.4, 0.25, 0.20, 0.14, 0.10, 0.078, 0.066, 0.05, 0.02],
+         "retention_rates": [1.0, 0.4, 0.25, 0.20, 0.14, 0.10, 0.07, 0.05, 0.03, 0.02],
     },
     "Rust": {
         "retention_rates": [1.0, 0.5, 0.3476, 0.23, 0.1451, 0.09, 0.0692, 0.0563, 0.0395, 0.0276],
@@ -64,10 +64,25 @@ monthly_campaigns = []
 months_labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
                  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
+months_default_installs = [ 250_000,  # Month 1
+    120_000,  # Month 2
+    90_000,   # Month 3
+    70_000,   # Month 4
+    60_000,   # Month 5
+    50_000,   # Month 6
+    45_000,   # Month 7
+    40_000,   # Month 8
+    40_000,   # Month 9
+    30_000,   # Month 10
+    20_000,   # Month 11
+    10_000    # Month 12
+    ]
+
+
 for i in range(12):
     val = st.sidebar.number_input(
         f"{months_labels[i]} Campaign Installs", 
-        min_value=0, value=50000, step=500
+        min_value=0, value=months_default_installs[i], step=500
     )
     monthly_campaigns.append(val)
 
@@ -148,7 +163,7 @@ st.sidebar.title("Pricing & Revenue")
 arpdau = st.sidebar.number_input("ARPDAU ($)", min_value=0.1, value=0.50, step=0.01)
 paid_price = st.sidebar.number_input("Paid Price ($)", min_value=0.1, value=29.99, step=0.10)
 battle_pass_price = st.sidebar.number_input("BP Price ($)", min_value=0.1, value=9.99, step=0.10)
-cpi = st.sidebar.number_input("CPI ($)", min_value=0.1, value=1.99, step=0.01)
+cpi = st.sidebar.number_input("CPI ($)", min_value=0.1, value=1.87, step=0.01)
 
 
 # Truncate extra if too many (e.g., leap year)
@@ -291,9 +306,16 @@ monthly_bp_revenue = []
 monthly_roi = []
 
 for i in range(6):
-    total_installs = seasonal_installs[i]
+    # Calculate the day range for the two-month season
+    start_day = i * 60
+    end_day = start_day + 60
+
+    # Sum up all active players (DAU) in those days
+    active_players = resultDAU["dau"]["dau"][start_day:end_day].sum()
     cost = season_costs[i]
-    bp_buyers = total_installs * battle_pass_conversion_rate
+
+    # Assume a percentage of active players purchase the battle pass
+    bp_buyers = active_players * battle_pass_conversion_rate
     revenue = bp_buyers * battle_pass_price
     roi = (revenue - cost) / cost if cost > 0 else 0
 
