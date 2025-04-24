@@ -368,31 +368,38 @@ csv = df_mixpanel_events.to_csv(index=False).encode("utf-8")
 st.download_button("Download Mixpanel Events Data", csv, "mixpanel_events.csv", "text/csv")
 
 # $0.00018 per event 
-cost_per_event =0.00018 
+cost_per_event =0.00028 
+free_events_per_month = 1_000_000
 days_per_month = 30
 
-# --- Monthly cost calculation
+# --- Monthly aggregation
 df_mixpanel_events["Month"] = df_mixpanel_events["day"] // days_per_month
-monthly_mixpanel_costs = df_mixpanel_events.groupby("Month")["Mixpanel Events"].sum() * cost_per_event
+monthly_events = df_mixpanel_events.groupby("Month")["Mixpanel Events"].sum().astype(int)
 
-# --- Create display DataFrame
+# --- Calculate cost only for events above 1M
+paid_events = monthly_events - free_events_per_month
+paid_events[paid_events < 0] = 0  # No negative events
+monthly_costs = paid_events * cost_per_event
+
+# --- Assemble final DataFrame
 df_mixpanel_costs = pd.DataFrame({
-    "Month": monthly_mixpanel_costs.index + 1,
-    "Mixpanel Events": df_mixpanel_events.groupby("Month")["Mixpanel Events"].sum().astype(int),
-    "Monthly Mixpanel Cost ($)": monthly_mixpanel_costs.round(2)
+    "Month": monthly_events.index + 1,
+    "Total Events": monthly_events,
+    "Free Events": free_events_per_month,
+    "Paid Events": paid_events,
+    "Monthly Cost ($)": monthly_costs.round(2)
 })
 
-# --- Show table
-st.write("### 💰 Monthly Mixpanel Cost Breakdown")
+# --- Display
+st.write("### 💰 Monthly Mixpanel Cost Breakdown (First 1M Free)")
 st.dataframe(df_mixpanel_costs)
 
 # --- Plot Monthly Costs
-fig_mixpanel_cost = px.bar(df_mixpanel_costs, x="Month", y="Monthly Mixpanel Cost ($)",
-                           title="Mixpanel Monthly Cost",
-                           text="Monthly Mixpanel Cost ($)",
-                           height=400)
+fig_mixpanel_cost = px.bar(df_mixpanel_costs, x="Month", y="Monthly Cost ($)",
+                           title="Mixpanel Monthly Cost (After Free Events)",
+                           text="Monthly Cost ($)", height=400)
 st.plotly_chart(fig_mixpanel_cost)
 
-# --- Download Cost Data
+# --- Downloadable CSV
 csv = df_mixpanel_costs.to_csv(index=False).encode("utf-8")
 st.download_button("Download Mixpanel Cost Data", csv, "mixpanel_costs.csv", "text/csv")
