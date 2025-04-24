@@ -340,3 +340,59 @@ fig_roi = px.bar(df_roi, x="Season", y="ROI", title="📊 ROI by 2-Month Season"
                  labels={"ROI": "Return on Investment"},
                  text="ROI %", height=400)
 st.plotly_chart(fig_roi)
+
+# --- Mixpanel Cost and ROAS
+st.write("### Mixpanel Cost")
+mixpanel_events_avg = st.sidebar.number_input("mixpanel_events_avg", min_value=100, value=769, step=10)
+
+# --- Calculate total Mixpanel events per day
+df_mixpanel_events = resultDAU["dau"].copy()
+df_mixpanel_events["Mixpanel Events"] = df_mixpanel_events["dau"] * mixpanel_events_avg
+
+# --- Total Mixpanel events over the full simulation
+total_mixpanel_events = int(df_mixpanel_events["Mixpanel Events"].sum())
+
+# --- Display Results
+st.write("### 🔢 Mixpanel Events Summary")
+st.metric(label="📊 Total Mixpanel Events (Annual)", value=f"{total_mixpanel_events:,}")
+
+# --- Optional: Plot Mixpanel events over time
+fig_mixpanel = px.line(df_mixpanel_events, x="day", y="Mixpanel Events",
+                       title="Mixpanel Events Per Day",
+                       labels={"Mixpanel Events": "Events", "day": "Day"},
+                       height=400)
+st.plotly_chart(fig_mixpanel)
+
+# --- Optional: Download Data
+csv = df_mixpanel_events.to_csv(index=False).encode("utf-8")
+st.download_button("Download Mixpanel Events Data", csv, "mixpanel_events.csv", "text/csv")
+
+# $0.00018 per event 
+cost_per_event =0.00018 
+days_per_month = 30
+
+# --- Monthly cost calculation
+df_mixpanel_events["Month"] = df_mixpanel_events["day"] // days_per_month
+monthly_mixpanel_costs = df_mixpanel_events.groupby("Month")["Mixpanel Events"].sum() * cost_per_event
+
+# --- Create display DataFrame
+df_mixpanel_costs = pd.DataFrame({
+    "Month": monthly_mixpanel_costs.index + 1,
+    "Mixpanel Events": df_mixpanel_events.groupby("Month")["Mixpanel Events"].sum().astype(int),
+    "Monthly Mixpanel Cost ($)": monthly_mixpanel_costs.round(2)
+})
+
+# --- Show table
+st.write("### 💰 Monthly Mixpanel Cost Breakdown")
+st.dataframe(df_mixpanel_costs)
+
+# --- Plot Monthly Costs
+fig_mixpanel_cost = px.bar(df_mixpanel_costs, x="Month", y="Monthly Mixpanel Cost ($)",
+                           title="Mixpanel Monthly Cost",
+                           text="Monthly Mixpanel Cost ($)",
+                           height=400)
+st.plotly_chart(fig_mixpanel_cost)
+
+# --- Download Cost Data
+csv = df_mixpanel_costs.to_csv(index=False).encode("utf-8")
+st.download_button("Download Mixpanel Cost Data", csv, "mixpanel_costs.csv", "text/csv")
