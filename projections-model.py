@@ -343,7 +343,7 @@ st.plotly_chart(fig_roi)
 
 # --- Mixpanel Cost and ROAS
 st.write("### Mixpanel Cost")
-mixpanel_events_avg = st.sidebar.number_input("mixpanel_events_avg", min_value=100, value=769, step=10)
+mixpanel_events_avg = st.sidebar.number_input("mixpanel_events_avg", min_value=10, value=769, step=10)
 
 # --- Calculate total Mixpanel events per day
 df_mixpanel_events = resultDAU["dau"].copy()
@@ -368,7 +368,7 @@ csv = df_mixpanel_events.to_csv(index=False).encode("utf-8")
 st.download_button("Download Mixpanel Events Data", csv, "mixpanel_events.csv", "text/csv")
 
 # $0.00018 per event 
-cost_per_event =0.00028 
+cost_per_event =0.00018 
 free_events_per_month = 1_000_000
 days_per_month = 30
 
