@@ -317,10 +317,11 @@ for i in range(6):
 
     # Assume a percentage of active players purchase the battle pass
     bp_buyers = active_players * battle_pass_conversion_rate
-    revenue = bp_buyers * battle_pass_price
-    roi = (revenue - cost) / cost if cost > 0 else 0
+    gross_revenue = bp_buyers * battle_pass_price
+    net_revenue = gross_revenue * 0.70  # Apply 30% store cut
+    roi = (net_revenue - cost) / cost if cost > 0 else 0
 
-    monthly_bp_revenue.append(round(revenue, 2))
+    monthly_bp_revenue.append(round(net_revenue, 2))
     monthly_roi.append(round(roi, 2))
 
 # --- Create DataFrame for display
@@ -403,3 +404,102 @@ st.plotly_chart(fig_mixpanel_cost)
 # --- Downloadable CSV
 csv = df_mixpanel_costs.to_csv(index=False).encode("utf-8")
 st.download_button("Download Mixpanel Cost Data", csv, "mixpanel_costs.csv", "text/csv")
+
+# -----------------------------------------
+# 📌 Trinket ROI Simulation
+# -----------------------------------------
+st.write("### 💎 Seasonal Trinket ROI")
+
+# --- Trinket config
+trinket_price = 1.0
+trinket_cost_total = 600.0*18  # One-off cost, applies only once
+
+# --- Slider: What % of active players buy the trinket each season
+trinket_buy_rate_percent = st.sidebar.slider("Trinket Purchase Rate per Season (%)", 
+                                             min_value=0.0, 
+                                             max_value=100.0, 
+                                             value=1.0, 
+                                             step=0.1)
+trinket_buy_rate = trinket_buy_rate_percent / 100.0
+
+# Cumulative trinkets sold so far
+cumulative_trinkets_sold = 0
+cumulative_unique_buyers = 0  # Needed to model per-player limits
+max_trinkets_per_player = 18
+
+
+trinket_revenue = []
+trinket_roi = []
+trinket_costs = []
+trinket_units_sold = []
+missed_revenue = []
+potential_revenue = []
+
+cumulative_trinkets_sold = 0
+cumulative_unique_buyers = 0
+max_trinkets_per_player = 18
+
+for i in range(6):
+    start_day = i * 60
+    end_day = start_day + 60
+
+    active_players = resultDAU["dau"]["dau"][start_day:end_day].sum()
+    buyers = active_players * trinket_buy_rate
+    cumulative_unique_buyers += buyers
+
+    # Max trinkets total (capped)
+    max_trinkets_total = cumulative_unique_buyers * max_trinkets_per_player
+
+    # Estimate units sold without cap
+    season_units_uncapped = buyers
+    season_units = min(season_units_uncapped, max(0, max_trinkets_total - cumulative_trinkets_sold))
+
+    cumulative_trinkets_sold += season_units
+    gross_revenue = season_units * trinket_price
+    net_revenue = gross_revenue * 0.70
+
+    gross_potential = season_units_uncapped * trinket_price * 0.70
+    revenue_missed = gross_potential - net_revenue
+
+    # Store results
+    trinket_units_sold.append(int(season_units))
+    trinket_revenue.append(round(net_revenue, 2))
+    missed_revenue.append(round(revenue_missed, 2))
+    potential_revenue.append(round(gross_potential, 2))
+
+    cost = trinket_cost_total if i == 0 else 0
+    trinket_costs.append(cost)
+
+    roi = (net_revenue - cost) / cost if cost > 0 else float("nan")
+    trinket_roi.append(round(roi, 2) if not np.isnan(roi) else None)
+
+
+df_trinket = pd.DataFrame({
+    "Season": season_labels,
+    "Trinkets Sold": trinket_units_sold,
+    "Trinket Revenue ($)": trinket_revenue,
+    "Potential Revenue ($)": potential_revenue,
+    "Missed Revenue ($)": missed_revenue,
+    "Trinket Cost ($)": trinket_costs,
+    "Trinket ROI": trinket_roi,
+    "Trinket ROI %": [f"{r * 100:.2f}%" if r is not None else "N/A" for r in trinket_roi]
+})
+
+
+# --- Display
+st.write("### 💎 Trinket Revenue & ROI by Season")
+st.dataframe(df_trinket)
+
+fig_trinket_roi = px.bar(df_trinket, x="Season", y="Trinket ROI", title="📊 Trinket ROI by 2-Month Season",
+                         labels={"Trinket ROI": "ROI"},
+                         text="Trinket ROI %", height=400)
+st.plotly_chart(fig_trinket_roi)
+
+# --- Optional CSV download
+csv_trinket = df_trinket.to_csv(index=False).encode("utf-8")
+st.download_button("Download Trinket ROI Data", csv_trinket, "trinket_roi.csv", "text/csv")
+
+fig_missed = px.bar(df_trinket, x="Season", y="Missed Revenue ($)",
+                    title="💸 Missed Trinket Revenue Due to 18-Trinket Cap",
+                    text="Missed Revenue ($)", height=400)
+st.plotly_chart(fig_missed)
