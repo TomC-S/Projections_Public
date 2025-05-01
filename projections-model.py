@@ -22,8 +22,8 @@ months_to_calc = int(days_in_year/30)
 ret_days= [0, 1, 3, 7, 14, 30, 60, 90, 180, 365]
 # --- Retention Data ---
 retention_models = {
-    "Default": { # basic PC data chagpt research dtaa 
-         "retention_rates": [1.0, 0.45, 0.35, 0.25, 0.175, 0.15, 0.075, 0.04, 0.02, 0.015],
+    "Default": { # basic PC data chagpt research data 
+         "retention_rates": [1.0, 0.45, 0.35, 0.25, 0.175, 0.15, 0.075, 0.04, 0.025, 0.0175],
     },
     "Rust": {
         "retention_rates": [1.0, 0.5, 0.3476, 0.23, 0.1451, 0.09, 0.0692, 0.0563, 0.0395, 0.0276],
@@ -404,6 +404,35 @@ st.plotly_chart(fig_mixpanel_cost)
 # --- Downloadable CSV
 csv = df_mixpanel_costs.to_csv(index=False).encode("utf-8")
 st.download_button("Download Mixpanel Cost Data", csv, "mixpanel_costs.csv", "text/csv")
+
+# -----------------------------------------
+# 📌 LootLocker Cost Simulation
+# -----------------------------------------
+st.write("### 🧩 LootLocker Cost Simulation")
+
+lootlocker_cost_per_user_per_month = 0.015  # $ per player per month
+
+# Calculate LootLocker costs
+df_lootlocker_cost = resultDAU["mau"].copy()
+df_lootlocker_cost["LootLocker Cost ($)"] = df_lootlocker_cost["mau"] * lootlocker_cost_per_user_per_month
+
+# --- Display LootLocker Monthly Costs
+st.write("### 💵 Monthly LootLocker Cost Based on MAU")
+st.dataframe(df_lootlocker_cost)
+
+# --- Plot LootLocker Cost Over Time
+fig_lootlocker = px.bar(df_lootlocker_cost, x="month", y="LootLocker Cost ($)",
+                        title="📊 Monthly LootLocker Cost Based on MAU",
+                        labels={"month": "Month", "LootLocker Cost ($)": "Cost ($)"},
+                        text="LootLocker Cost ($)", height=400)
+st.plotly_chart(fig_lootlocker)
+
+# --- Downloadable CSV
+csv_lootlocker = df_lootlocker_cost.to_csv(index=False).encode("utf-8")
+st.download_button("Download LootLocker Cost Data", csv_lootlocker, "lootlocker_costs.csv", "text/csv")
+
+
+
 
 # -----------------------------------------
 # 📌 Trinket ROI Simulation
