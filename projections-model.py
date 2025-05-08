@@ -532,3 +532,34 @@ fig_missed = px.bar(df_trinket, x="Season", y="Missed Revenue ($)",
                     title="💸 Missed Trinket Revenue Due to 18-Trinket Cap",
                     text="Missed Revenue ($)", height=400)
 st.plotly_chart(fig_missed)
+
+
+# --- Define individual and combined costs
+monthly_shop_cost = 93696
+seasonal_cost = 93528  # per 2 months
+seasonal_cost_per_month = seasonal_cost / 2
+total_monthly_cost = monthly_shop_cost + seasonal_cost_per_month  # $140,460
+
+# --- Make safe copy
+df_monthly_combined = df_monthly_revenue.copy()
+
+# --- Calculate ROI with combined cost
+df_monthly_combined.loc[:, "Combined Monthly Cost ($)"] = total_monthly_cost
+df_monthly_combined.loc[:, "Monthly ROI (with Seasonal)"] = (
+    df_monthly_combined["Monthly Revenue ($)"] - total_monthly_cost
+) / total_monthly_cost
+
+df_monthly_combined.loc[:, "Monthly ROI %"] = (
+    df_monthly_combined["Monthly ROI (with Seasonal)"] * 100
+).round(2)
+
+# --- Display Table
+st.write("### 📊 Monthly ROI Including Shop + Seasonal Cost ($140,460/month)")
+st.dataframe(df_monthly_combined[["Day", "Monthly Revenue ($)", "Combined Monthly Cost ($)", "Monthly ROI %"]])
+
+# --- Plot ROI Chart
+fig_combined_roi = px.bar(df_monthly_combined, x="Day", y="Monthly ROI %",
+                          title="📈 Monthly ROI with Combined Costs (Shop + Seasonal)",
+                          labels={"Monthly ROI %": "ROI (%)", "Day": "Day (Start of Month)"},
+                          text="Monthly ROI %", height=400)
+st.plotly_chart(fig_combined_roi)
