@@ -563,3 +563,15 @@ fig_combined_roi = px.bar(df_monthly_combined, x="Day", y="Monthly ROI %",
                           labels={"Monthly ROI %": "ROI (%)", "Day": "Day (Start of Month)"},
                           text="Monthly ROI %", height=400)
 st.plotly_chart(fig_combined_roi)
+
+# Assuming arpdau is already defined by user input
+max_monthly_spend = 45
+days_per_month = 30
+max_daily_spend = max_monthly_spend / days_per_month
+
+# % of users who need to spend to achieve ARPDAU
+required_spender_pct = arpdau / max_daily_spend
+required_spender_pct_clamped = min(required_spender_pct, 1.0)  # can't exceed 100%
+
+st.metric("🎯 % of DAU Needing to Spend", f"{required_spender_pct_clamped*100:.2f}%")
+
